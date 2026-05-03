@@ -128,6 +128,7 @@ com.saumik.TaskForge
 
 ---
 
+
 # 🚀 Getting Started
 
 ## 1. Clone repository
@@ -144,7 +145,7 @@ cd taskforge
 ```properties
 spring.datasource.url=jdbc:postgresql://localhost:5432/taskforge
 spring.datasource.username=postgres
-spring.datasource.password=yourpassword
+spring.datasource.password=yourpassword 
 
 spring.jpa.hibernate.ddl-auto=update
 
