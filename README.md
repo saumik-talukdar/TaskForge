@@ -133,7 +133,7 @@ com.saumik.TaskForge
 ## 1. Clone repository
 
 ```bash
-git clone https://github.com/your-username/taskforge.git
+git clone https://github.com/saumik-talukdar/taskforge.git
 cd taskforge
 ```
 
