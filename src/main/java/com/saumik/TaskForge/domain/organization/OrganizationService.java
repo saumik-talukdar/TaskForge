@@ -1,10 +1,12 @@
 package com.saumik.TaskForge.domain.organization;
 
+import com.saumik.TaskForge.common.exception.AccessDeniedException;
+import com.saumik.TaskForge.common.exception.BadRequestException;
 import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-
-import java.util.List;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import java.util.UUID;
 
 @Service
@@ -33,33 +35,45 @@ public class OrganizationService {
         membershipRepository.save(membership);
     }
 
-    public List<Organization> getUserOrganizations(UUID userId) {
-
-        List<Membership> memberships = membershipRepository.findByUserId(userId);
-
-        List<UUID> orgIds = memberships.stream()
-                .map(Membership::getOrganizationId)
-                .toList();
-
-        return organizationRepository.findAllById(orgIds);
+    public Page<Organization> getUserOrganizations(UUID userId, Pageable pageable) {
+        return organizationRepository.findByUserId(userId, pageable);
     }
 
     @Transactional
     public void joinOrganization(UUID orgId, UUID userId) {
 
-        boolean exists = membershipRepository
-                .existsByUserIdAndOrganizationId(userId, orgId);
-
-        if (exists) {
-            throw new RuntimeException("Already a member of this organization");
+        if (membershipRepository.existsByUserIdAndOrganizationId(userId, orgId)) {
+            throw new BadRequestException("Already a member of this organization");
         }
 
-        Membership membership = Membership.builder()
-                .userId(userId)
-                .organizationId(orgId)
-                .role(Role.MEMBER)
-                .build();
+        try {
+            Membership membership = Membership.builder()
+                    .userId(userId)
+                    .organizationId(orgId)
+                    .role(Role.MEMBER)
+                    .build();
 
-        membershipRepository.save(membership);
+            membershipRepository.save(membership);
+
+        } catch (Exception e) {
+            // fallback safety for race condition
+            throw new BadRequestException("Already a member of this organization");
+        }
+    }
+
+    public Page<Membership> getMembers(UUID orgId, UUID userId, Pageable pageable) {
+
+        // security check
+        getMembership(userId, orgId);
+
+        return membershipRepository.findByOrganizationId(orgId, pageable);
+    }
+
+    // helper
+    private Membership getMembership(UUID userId, UUID orgId) {
+        return membershipRepository
+                .findByUserIdAndOrganizationId(userId, orgId)
+                .orElseThrow(() ->
+                        new AccessDeniedException("Not a member of this organization"));
     }
 }

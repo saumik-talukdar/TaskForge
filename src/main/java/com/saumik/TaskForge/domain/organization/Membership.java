@@ -9,9 +9,10 @@ import java.util.UUID;
 @Entity
 @Table(
         name = "memberships",
-        uniqueConstraints = {
-                @UniqueConstraint(columnNames = {"user_id", "organization_id"})
-        }
+        uniqueConstraints = @UniqueConstraint(
+                name = "uk_user_org",
+                columnNames = {"user_id", "organization_id"}
+        )
 )
 @Getter
 @Setter

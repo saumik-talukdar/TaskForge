@@ -1,11 +1,18 @@
 package com.saumik.TaskForge.domain.task;
 
+import com.saumik.TaskForge.common.response.PagedResponse;
 import com.saumik.TaskForge.domain.user.User;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
+import java.time.Instant;
+import org.springframework.format.annotation.DateTimeFormat;
+
 
 import java.util.List;
 import java.util.UUID;
@@ -38,23 +45,53 @@ public class TaskController {
     }
 
     @GetMapping
-    public ResponseEntity<List<TaskResponse>> getTasks(
+    public ResponseEntity<PagedResponse<TaskResponse>> getTasks(
             @PathVariable UUID orgId,
             @PathVariable UUID projectId,
+            @RequestParam(required = false) TaskStatus status,
+            @RequestParam(required = false) UUID assigneeId,
+            @RequestParam(required = false) TaskPriority priority,
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
+            Instant from,
+            @RequestParam(required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
+            Instant to,
+            @PageableDefault(size = 10, sort = "createdAt") Pageable pageable,
             Authentication authentication
     ) {
         User user = (User) authentication.getPrincipal();
 
-        List<Task> tasks =
-                taskService.getTasks(orgId, projectId, user.getId());
+        Page<Task> taskPage = taskService.getTasks(
+                orgId,
+                projectId,
+                user.getId(),
+                status,
+                assigneeId,
+                priority,
+                keyword,
+                from,
+                to,
+                pageable
+        );
 
-        List<TaskResponse> response = tasks.stream()
+        List<TaskResponse> data = taskPage.getContent().stream()
                 .map(t -> new TaskResponse(
                         t.getId(),
                         t.getTitle(),
                         t.getStatus().name()
                 ))
                 .toList();
+
+        PagedResponse<TaskResponse> response =
+                new PagedResponse<>(
+                        data,
+                        taskPage.getNumber(),
+                        taskPage.getSize(),
+                        taskPage.getTotalElements(),
+                        taskPage.getTotalPages()
+                );
 
         return ResponseEntity.ok(response);
     }

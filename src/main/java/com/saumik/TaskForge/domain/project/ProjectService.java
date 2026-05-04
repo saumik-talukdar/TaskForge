@@ -5,8 +5,12 @@ import com.saumik.TaskForge.domain.organization.MembershipRepository;
 import com.saumik.TaskForge.domain.organization.Role;
 import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
+import org.springframework.stereotype.Service;import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 
+
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
@@ -44,7 +48,14 @@ public class ProjectService {
         projectRepository.save(project);
     }
 
-    public List<Project> getProjects(UUID orgId, UUID userId) {
+    public Page<Project> getProjects(
+            UUID orgId,
+            UUID userId,
+            String keyword,
+            Instant from,
+            Instant to,
+            Pageable pageable
+    ) {
 
         boolean isMember = membershipRepository
                 .existsByUserIdAndOrganizationId(userId, orgId);
@@ -53,7 +64,15 @@ public class ProjectService {
             throw new RuntimeException("Unauthorized");
         }
 
-        return projectRepository.findByOrganizationId(orgId);
+        Membership m = getMembership(userId, orgId);
+
+        Specification<Project> spec =
+                ProjectSpecification.hasOrganization(orgId)
+                        .and(ProjectSpecification.nameContains(keyword))
+                        .and(ProjectSpecification.createdAfter(from))
+                        .and(ProjectSpecification.createdBefore(to));
+
+        return projectRepository.findAll(spec, pageable);
     }
 
     @Transactional

@@ -1,3 +1,8 @@
 package com.saumik.TaskForge.domain.organization;
 
-public record CreateOrganizationRequest(String name) {}
+import jakarta.validation.constraints.NotBlank;
+
+public record CreateOrganizationRequest(
+        @NotBlank(message = "Organization name is required")
+        String name
+) {}

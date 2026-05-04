@@ -31,21 +31,32 @@ public class GlobalExceptionHandler {
         return buildResponse(HttpStatus.BAD_REQUEST, ex.getMessage());
     }
 
+    @ExceptionHandler(AccessDeniedException.class)
+    public ResponseEntity<ErrorResponse> handleAccessDenied(AccessDeniedException ex) {
+        return buildResponse(HttpStatus.FORBIDDEN, ex.getMessage());
+    }
+
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ErrorResponse> handleValidation(MethodArgumentNotValidException ex) {
 
         String message = ex.getBindingResult()
                 .getFieldErrors()
                 .stream()
-                .findFirst()
-                .map(e -> e.getField() + " " + e.getDefaultMessage())
+                .map(e -> e.getField() + ": " + e.getDefaultMessage())
+                .reduce((a, b) -> a + ", " + b)
                 .orElse("Validation error");
 
         return buildResponse(HttpStatus.BAD_REQUEST, message);
     }
 
+    @ExceptionHandler(org.springframework.security.core.AuthenticationException.class)
+    public ResponseEntity<ErrorResponse> handleAuthException(Exception ex) {
+        return buildResponse(HttpStatus.UNAUTHORIZED, "Authentication failed");
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleGeneric(Exception ex) {
+        ex.printStackTrace(); // replace with logger later
         return buildResponse(HttpStatus.INTERNAL_SERVER_ERROR, "Something went wrong");
     }
 
@@ -56,6 +67,6 @@ public class GlobalExceptionHandler {
                 message,
                 Instant.now()
         );
-        return new ResponseEntity<>(response, status);
+        return ResponseEntity.status(status).body(response);
     }
 }

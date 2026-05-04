@@ -8,7 +8,12 @@ import com.saumik.TaskForge.domain.project.ProjectRepository;
 import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 
+
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
@@ -43,12 +48,37 @@ public class TaskService {
     }
 
     // GET
-    public List<Task> getTasks(UUID orgId, UUID projectId, UUID userId) {
+    public Page<Task> getTasks(
+            UUID orgId,
+            UUID projectId,
+            UUID userId,
+            TaskStatus status,
+            UUID assigneeId,
+            TaskPriority priority,
+            String keyword,
+            Instant from,
+            Instant to,
+            Pageable pageable
+    ) {
 
         validateMembership(userId, orgId);
         validateProject(orgId, projectId);
 
-        return taskRepository.findByProjectId(projectId);
+        Membership m = getMembership(userId, orgId);
+        boolean isAdmin = isAdmin(m);
+
+        Specification<Task> spec =
+                TaskSpecification.hasOrganization(orgId)
+                        .and(TaskSpecification.hasProject(projectId))
+                        .and(TaskSpecification.isVisibleTo(userId, isAdmin))
+                        .and(TaskSpecification.titleContains(keyword))
+                        .and(TaskSpecification.hasStatus(status))
+                        .and(TaskSpecification.hasPriority(priority))
+                        .and(TaskSpecification.hasAssignee(assigneeId))
+                        .and(TaskSpecification.createdAfter(from))
+                        .and(TaskSpecification.createdBefore(to));
+
+        return taskRepository.findAll(spec, pageable);
     }
 
     // UPDATE TASK DETAILS
