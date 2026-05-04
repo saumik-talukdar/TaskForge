@@ -4,7 +4,6 @@ import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
 
-
 public record RegistrationRequest (
     String fullName,
     String email,

@@ -7,7 +7,6 @@ import com.saumik.TaskForge.security.refresh.RefreshTokenService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -26,9 +25,9 @@ public class AuthService {
     @Transactional
     public AuthResponse register(RegistrationRequest request){
         var user = User.builder()
-                .fullName(request.getFullName())
-                .email(request.getEmail().toLowerCase())
-                .password(passwordEncoder.encode(request.getPassword()))
+                .fullName(request.fullName())
+                .email(request.email().toLowerCase())
+                .password(passwordEncoder.encode(request.password()))
                 .build();
 
         userRepository.save(user);
@@ -46,8 +45,8 @@ public class AuthService {
     public AuthResponse login(LoginRequest request){
         var auth = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(
-                        request.getEmail().toLowerCase(),
-                        request.getPassword()
+                        request.email().toLowerCase(),
+                        request.password()
                 )
         );
 
@@ -66,9 +65,9 @@ public class AuthService {
 
     public AuthResponse refresh(RefreshRequest request){
 
-        UUID userId = refreshTokenService.validate(request.getRefreshToken());
+        UUID userId = refreshTokenService.validate(request.refreshToken());
 
-        refreshTokenService.logout(request.getRefreshToken());
+        refreshTokenService.logout(request.refreshToken());
         User user = userRepository.findById(userId)
                         .orElseThrow();
         String refreshToken = refreshTokenService.create(userId);
