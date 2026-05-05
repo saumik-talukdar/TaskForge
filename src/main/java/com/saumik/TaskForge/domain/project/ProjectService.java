@@ -1,5 +1,8 @@
 package com.saumik.TaskForge.domain.project;
 
+import com.saumik.TaskForge.common.exception.AccessDeniedException;
+import com.saumik.TaskForge.common.exception.BadRequestException;
+import com.saumik.TaskForge.common.exception.NotFoundException;
 import com.saumik.TaskForge.domain.organization.Membership;
 import com.saumik.TaskForge.domain.organization.MembershipRepository;
 import com.saumik.TaskForge.domain.organization.Role;
@@ -28,14 +31,14 @@ public class ProjectService {
         Membership m = getMembership(userId, orgId);
 
         if (!isAdmin(m)) {
-            throw new RuntimeException("Only admin can create projects");
+            throw new AccessDeniedException("Only admin can create projects");
         }
 
         boolean exists = projectRepository
                 .existsByOrganizationIdAndName(orgId, name);
 
         if (exists) {
-            throw new RuntimeException("Project name already exists");
+            throw new BadRequestException("Project name already exists");
         }
 
         Project project = Project.builder()
@@ -57,13 +60,6 @@ public class ProjectService {
             Pageable pageable
     ) {
 
-        boolean isMember = membershipRepository
-                .existsByUserIdAndOrganizationId(userId, orgId);
-
-        if (!isMember) {
-            throw new RuntimeException("Unauthorized");
-        }
-
         Membership m = getMembership(userId, orgId);
 
         Specification<Project> spec =
@@ -80,12 +76,12 @@ public class ProjectService {
                               String name, String description) {
 
         Project project = projectRepository.findById(projectId)
-                .orElseThrow(() -> new RuntimeException("Project not found"));
+                .orElseThrow(() -> new NotFoundException("Project not found"));
 
         Membership m = getMembership(userId, project.getOrganizationId());
 
         if (!isAdmin(m)) {
-            throw new RuntimeException("Only admin can update project");
+            throw new AccessDeniedException("Only admin can update project");
         }
 
         if (name != null) project.setName(name);
@@ -96,12 +92,12 @@ public class ProjectService {
     public void deleteProject(UUID projectId, UUID userId) {
 
         Project project = projectRepository.findById(projectId)
-                .orElseThrow(() -> new RuntimeException("Project not found"));
+                .orElseThrow(() -> new NotFoundException("Project not found"));
 
         Membership m = getMembership(userId, project.getOrganizationId());
 
         if (!isAdmin(m)) {
-            throw new RuntimeException("Only admin can delete project");
+            throw new AccessDeniedException("Only admin can delete project");
         }
 
         projectRepository.delete(project);
@@ -113,7 +109,7 @@ public class ProjectService {
     private Membership getMembership(UUID userId, UUID orgId) {
         return membershipRepository
                 .findByUserIdAndOrganizationId(userId, orgId)
-                .orElseThrow(() -> new RuntimeException("Not a member"));
+                .orElseThrow(() -> new AccessDeniedException("Not a member of this organization"));
     }
 
     private boolean isAdmin(Membership m) {

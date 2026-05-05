@@ -78,7 +78,7 @@ public class OrganizationController {
     @GetMapping("/{orgId}/members")
     public ResponseEntity<PagedResponse<MemberResponse>> getMembers(
             @PathVariable UUID orgId,
-            @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.ASC)
+            @PageableDefault(size = 10, sort = "joinedAt", direction = Sort.Direction.ASC)
             Pageable pageable,
             Authentication authentication
     ) {

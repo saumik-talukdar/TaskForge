@@ -37,7 +37,8 @@ public class User implements UserDetails {
     @Column(name = "full_name", nullable = false, length = 150)
     private String fullName;
     @Column(name = "password_version", nullable = false)
-    private Long passwordVersion = 0L;
+    @Builder.Default
+    private int passwordVersion = 0;
     @Column(name = "is_active", nullable = false)
     @Builder.Default
     private boolean isActive = true; // later change

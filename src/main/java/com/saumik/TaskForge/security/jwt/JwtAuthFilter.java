@@ -1,5 +1,7 @@
 package com.saumik.TaskForge.security.jwt;
 
+import com.saumik.TaskForge.common.exception.InvalidTokenException;
+import com.saumik.TaskForge.common.exception.TokenExpiredException;
 import com.saumik.TaskForge.domain.user.User;
 import com.saumik.TaskForge.security.userdetails.AppUserDetailsService;
 import jakarta.servlet.FilterChain;
@@ -7,9 +9,9 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
@@ -19,6 +21,7 @@ import java.util.UUID;
 
 @Component
 @RequiredArgsConstructor
+@Slf4j
 public class JwtAuthFilter extends OncePerRequestFilter {
 
     private final JwtService jwtService;
@@ -30,35 +33,42 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                                     FilterChain filterChain)
             throws ServletException, IOException {
 
-
         final String authHeader = request.getHeader("Authorization");
-        final String jwt;
-        final UUID userId;
 
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
             filterChain.doFilter(request, response);
             return;
         }
 
-        jwt = authHeader.substring(7);
+        String jwt = authHeader.substring(7);
 
-        try{
-            userId = jwtService.extractUserId(jwt);
-            User user = (User) this.userDetailsService.loadUserById(userId);
+        try {
+            UUID userId = jwtService.extractUserId(jwt);
+            User user = (User) userDetailsService.loadUserById(userId);
 
-            if(jwtService.isValid(jwt,user)){
-                UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
-                        user, null, user.getAuthorities()
+            if (jwtService.isValid(jwt, user)) {
+                UsernamePasswordAuthenticationToken authToken =
+                        new UsernamePasswordAuthenticationToken(
+                                user, null, user.getAuthorities()
+                        );
+
+                authToken.setDetails(
+                        new WebAuthenticationDetailsSource().buildDetails(request)
                 );
-                authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+
                 SecurityContextHolder.getContext().setAuthentication(authToken);
             }
 
-        }catch (Exception e){
-            // logging
+        } catch (TokenExpiredException e) {
+            log.warn("JWT expired: {}", e.getMessage());
+
+        } catch (InvalidTokenException e) {
+            log.warn("Invalid JWT: {}", e.getMessage());
+
+        } catch (Exception e) {
+            log.error("Unexpected JWT error", e);
         }
 
-        filterChain.doFilter(request,response);
-
+        filterChain.doFilter(request, response);
     }
 }

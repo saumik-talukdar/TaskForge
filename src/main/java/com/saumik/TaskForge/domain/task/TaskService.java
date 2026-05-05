@@ -1,5 +1,8 @@
 package com.saumik.TaskForge.domain.task;
 
+import com.saumik.TaskForge.common.exception.AccessDeniedException;
+import com.saumik.TaskForge.common.exception.BadRequestException;
+import com.saumik.TaskForge.common.exception.NotFoundException;
 import com.saumik.TaskForge.domain.organization.Membership;
 import com.saumik.TaskForge.domain.organization.MembershipRepository;
 import com.saumik.TaskForge.domain.organization.Role;
@@ -94,7 +97,7 @@ public class TaskService {
                         (task.getAssigneeId() != null && task.getAssigneeId().equals(userId));
 
         if (!allowed) {
-            throw new RuntimeException("Not allowed to update task");
+            throw new AccessDeniedException("Not allowed to update task");
         }
 
         if (title != null) task.setTitle(title);
@@ -114,7 +117,7 @@ public class TaskService {
                         (task.getAssigneeId() != null && task.getAssigneeId().equals(userId));
 
         if (!allowed) {
-            throw new RuntimeException("Not allowed to update status");
+            throw new AccessDeniedException("Not allowed to update status");
         }
 
         task.setStatus(status);
@@ -128,7 +131,7 @@ public class TaskService {
         Membership m = getMembership(userId, task.getOrganizationId());
 
         if (!isAdmin(m)) {
-            throw new RuntimeException("Only admin can assign tasks");
+            throw new AccessDeniedException("Only admin can assign tasks");
         }
 
         validateMembership(assigneeId, task.getOrganizationId());
@@ -148,7 +151,7 @@ public class TaskService {
                         task.getCreatedBy().equals(userId);
 
         if (!allowed) {
-            throw new RuntimeException("Not allowed to delete task");
+            throw new AccessDeniedException("Not allowed to delete task");
         }
 
         taskRepository.delete(task);
@@ -158,7 +161,7 @@ public class TaskService {
 
     private Task getTaskOrThrow(UUID taskId) {
         return taskRepository.findById(taskId)
-                .orElseThrow(() -> new RuntimeException("Task not found"));
+                .orElseThrow(() -> new NotFoundException("Task not found"));
     }
 
     private void validateMembership(UUID userId, UUID orgId) {
@@ -166,23 +169,23 @@ public class TaskService {
                 .existsByUserIdAndOrganizationId(userId, orgId);
 
         if (!isMember) {
-            throw new RuntimeException("Unauthorized");
+            throw new AccessDeniedException("Not a member of this organization");
         }
     }
 
     private void validateProject(UUID orgId, UUID projectId) {
         Project project = projectRepository.findById(projectId)
-                .orElseThrow(() -> new RuntimeException("Project not found"));
+                .orElseThrow(() -> new NotFoundException("Project not found"));
 
         if (!project.getOrganizationId().equals(orgId)) {
-            throw new RuntimeException("Invalid project for organization");
+            throw new BadRequestException("Invalid project for organization");
         }
     }
 
     private Membership getMembership(UUID userId, UUID orgId) {
         return membershipRepository
                 .findByUserIdAndOrganizationId(userId, orgId)
-                .orElseThrow(() -> new RuntimeException("Not a member"));
+                .orElseThrow(() -> new AccessDeniedException("Not a member"));
     }
 
     private boolean isAdmin(Membership m) {

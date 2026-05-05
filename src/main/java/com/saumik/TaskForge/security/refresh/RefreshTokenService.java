@@ -1,5 +1,6 @@
 package com.saumik.TaskForge.security.refresh;
 
+import com.saumik.TaskForge.common.exception.InvalidTokenException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.StringRedisTemplate;
@@ -37,12 +38,14 @@ public class RefreshTokenService {
         return token;
     }
 
-    public UUID validate(String token){
+    public UUID validate(String token) {
         String tokenKey = RT_PREFIX + token;
         String userId = redisTemplate.opsForValue().get(tokenKey);
-        if(userId == null){
-            throw new RuntimeException("Refresh token is expired or invalid");
+
+        if (userId == null) {
+            throw new InvalidTokenException("Refresh token expired or invalid");
         }
+
         return UUID.fromString(userId);
     }
 
