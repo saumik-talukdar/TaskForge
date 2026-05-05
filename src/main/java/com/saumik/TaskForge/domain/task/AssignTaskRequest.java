@@ -8,3 +8,4 @@ public record AssignTaskRequest(
         @NotNull(message = "Assignee ID is required")
         UUID assigneeId
 ) {}
+
