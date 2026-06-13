@@ -41,7 +41,6 @@ public class TaskService {
                            String title, String description,
                            TaskPriority priority, Instant dueDate) {
 
-        // getAccessibleProject enforces org membership + project visibility
         Project project = getAccessibleProject(orgId, projectId, userId);
 
         Task task = Task.builder()
@@ -65,7 +64,6 @@ public class TaskService {
                                TaskPriority priority, String keyword,
                                Instant from, Instant to, Pageable pageable) {
 
-        // Access check — throws if user can't see the project
         getAccessibleProject(orgId, projectId, userId);
 
         Specification<Task> spec =
@@ -151,7 +149,7 @@ public class TaskService {
             requireOrgMember(assigneeId, orgId);
         }
 
-        task.setAssigneeId(assigneeId);  // null clears the assignment
+        task.setAssigneeId(assigneeId);
         task.setUpdatedBy(requesterId);
     }
 
@@ -173,11 +171,7 @@ public class TaskService {
         taskRepository.delete(task);
     }
 
-    /**
-     * Fetches the project and enforces visibility rules — no dependency on ProjectService.
-     * TaskService owns this check because tasks are leaves in the hierarchy; they
-     * validate access by querying repos directly, not by calling up to a parent service.
-     */
+
     private Project getAccessibleProject(UUID orgId, UUID projectId, UUID userId) {
 
         Project project = getProjectInOrg(orgId, projectId);
@@ -189,7 +183,6 @@ public class TaskService {
 
         if (project.getVisibility() == ProjectVisibility.PUBLIC_TO_ORG) return project;
 
-        // Private project — must have an explicit membership row
         if (!projectMembershipRepository.existsByUserIdAndProjectId(userId, projectId)) {
             throw new AccessDeniedException("You do not have access to this project");
         }
@@ -210,7 +203,6 @@ public class TaskService {
         Task task = taskRepository.findById(taskId)
                 .orElseThrow(() -> new NotFoundException("Task not found"));
 
-        // Validate path consistency — don't leak cross-project task existence
         if (!task.getOrganizationId().equals(orgId) || !task.getProjectId().equals(projectId)) {
             throw new NotFoundException("Task not found");
         }

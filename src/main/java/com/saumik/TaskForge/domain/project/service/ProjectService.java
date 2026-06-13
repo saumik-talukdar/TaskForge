@@ -234,7 +234,6 @@ public class ProjectService {
 
         if (project.getVisibility() == ProjectVisibility.PUBLIC_TO_ORG) return project;
 
-        // Private project — must have an explicit membership row
         if (!projectMembershipRepository.existsByUserIdAndProjectId(userId, projectId)) {
             throw new AccessDeniedException("You do not have access to this project");
         }

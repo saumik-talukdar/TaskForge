@@ -4,6 +4,7 @@ import com.saumik.TaskForge.security.jwt.JwtAuthFilter;
 import com.saumik.TaskForge.security.userdetails.AppUserDetailsService;
 import lombok.RequiredArgsConstructor;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -39,6 +40,9 @@ public class SecurityConfig {
     private final JwtAuthFilter jwtAuthFilter;
 
     private final AppUserDetailsService userDetailsService;
+
+    @Value("${app.frontend-url}")
+    private String frontendUrl;
 
     @Bean
     public SecurityFilterChain securityFilterChain(
@@ -82,7 +86,7 @@ public class SecurityConfig {
                 new CorsConfiguration();
 
         configuration.setAllowedOrigins(
-                List.of("http://localhost:5173")
+                List.of(frontendUrl)
         );
 
         configuration.setAllowedMethods(
@@ -90,6 +94,7 @@ public class SecurityConfig {
                         "GET",
                         "POST",
                         "PUT",
+                        "PATCH",
                         "DELETE",
                         "OPTIONS"
                 )

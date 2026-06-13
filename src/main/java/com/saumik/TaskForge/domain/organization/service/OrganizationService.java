@@ -166,7 +166,6 @@ public class OrganizationService {
                         .build()
         );
 
-        // Delete after use — no need to keep accepted invites around
         inviteRepository.delete(invite);
     }
 
