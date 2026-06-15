@@ -23,6 +23,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.util.Optional;
 import java.util.UUID;
 
 @Service
@@ -131,6 +132,10 @@ public class AuthService {
         if(user == null){
             return;
         }
+
+        // delete old token
+        Optional<PasswordResetToken> oldToken = tokenRepository.findById(user.getId());
+        oldToken.ifPresent(tokenRepository::delete);
 
         String token = UUID.randomUUID().toString();
 
