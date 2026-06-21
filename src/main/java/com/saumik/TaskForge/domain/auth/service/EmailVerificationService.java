@@ -5,6 +5,7 @@ import com.saumik.TaskForge.domain.auth.entity.EmailVerificationToken;
 import com.saumik.TaskForge.domain.auth.repository.EmailVerificationTokenRepository;
 import com.saumik.TaskForge.domain.user.entity.User;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -16,6 +17,9 @@ import java.util.UUID;
 public class EmailVerificationService {
     private final EmailVerificationTokenRepository tokenRepository;
     private final EmailService emailService;
+
+    @Value("${app.frontend-url}")
+    private String frontendUrl;
 
     @Transactional
     public void sendVerificationEmail(User user) {
@@ -31,8 +35,7 @@ public class EmailVerificationService {
 
         tokenRepository.save(verificationToken);
 
-        String link =
-                "http://localhost:5173/verify-email?token=" + token;
+        String link = frontendUrl+"/api/v1/auth/verify-email?token=" + token;
 
         String body = """
             Welcome to TaskForge!
